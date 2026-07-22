@@ -24,10 +24,12 @@ import {
 
 export type RankingMode = '用户' | '主题';
 type FeedbackFilter = '全部' | '有反馈' | '不满意反馈';
+type StatusFilter = '全部状态' | SessionStatus;
 type RankingSortKey = 'token' | 'sessions' | 'avgDurationSeconds';
 
 export const ALL_USERS = '全部用户';
 export const ALL_TOPICS = '全部主题';
+const ALL_STATUSES: StatusFilter = '全部状态';
 
 const navItems = ['小K', '工作台', '数据门户', '系统菜单'];
 const sideItems = [
@@ -227,16 +229,18 @@ function StatusBadge({ value }: { value: SessionStatus }) {
 
 export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange, onTopicChange, onReset, allowTopicFilter = true }: { sessionsData: Session[]; metrics: PeriodMetrics; user: string; topic: string; onUserChange: (value: string) => void; onTopicChange: (value: string) => void; onReset: () => void; allowTopicFilter?: boolean }) {
   const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('全部');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL_STATUSES);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
   const baseFiltered = useMemo(() => sessionsData.filter((item) => {
     const feedbackMatch = feedbackFilter === '全部' || (feedbackFilter === '有反馈' ? item.feedback !== '未反馈' : item.feedback === '不满意');
+    const statusMatch = statusFilter === ALL_STATUSES || item.status === statusFilter;
     const query = search.trim().toLowerCase();
     const searchMatch = !query || `${item.query}${item.feedbackText}${item.user}${item.topic}${item.status}`.toLowerCase().includes(query);
-    return feedbackMatch && searchMatch;
-  }), [feedbackFilter, search, sessionsData]);
+    return feedbackMatch && statusMatch && searchMatch;
+  }), [feedbackFilter, search, sessionsData, statusFilter]);
   const users = useMemo(
     () => [...new Set(baseFiltered.filter((item) => topic === ALL_TOPICS || item.topic === topic).map((item) => item.user))],
     [baseFiltered, topic],
@@ -251,7 +255,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
 
   useEffect(() => {
     setPage(1);
-  }, [user, topic]);
+  }, [statusFilter, topic, user]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pages);
@@ -259,6 +263,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
 
   const reset = () => {
     setFeedbackFilter('全部');
+    setStatusFilter(ALL_STATUSES);
     setSearch('');
     setPage(1);
     onReset();
@@ -278,12 +283,13 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
         <div className="filter-row filter-row-secondary">
           <div className="filter-field"><span>发起用户</span><SearchableSelect label="发起用户" value={user} allLabel={ALL_USERS} options={users} onChange={onUserChange} /></div>
           {allowTopicFilter && <div className="filter-field"><span>询问主题</span><SearchableSelect label="询问主题" value={topic} allLabel={ALL_TOPICS} options={topics} onChange={onTopicChange} /></div>}
+          <label className="filter-field"><span>运行状态</span><select className="filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option>{ALL_STATUSES}</option><option>已完成</option><option>进行中</option><option>手动终止</option></select></label>
           <button type="button" className="reset-button" onClick={reset}>重置</button>
         </div>
       </div>
       <div className="session-table-wrap">
         <table className="session-table">
-          <thead><tr><th>会话提问内容</th><th>发生时间</th><th>结束时间</th><th>时长</th><th>状态</th><th>Token</th><th>用户反馈</th><th>反馈内容</th><th>发起用户</th><th>询问主题</th></tr></thead>
+          <thead><tr><th>会话提问内容</th><th>发生时间</th><th>结束时间</th><th>时长</th><th>运行状态</th><th>Token</th><th>用户反馈</th><th>反馈内容</th><th>发起用户</th><th>询问主题</th></tr></thead>
           <tbody>
             {visibleRows.map((item) => (
               <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td><StatusBadge value={item.status} /></td><td>{item.token}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><strong>{item.user}</strong></td><td><strong>{item.topic}</strong></td></tr>
