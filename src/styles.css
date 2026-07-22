@@ -160,10 +160,10 @@ main { min-width: 0; padding: 28px; background: #fff; }
 .session-table th:nth-child(1) { width: 15%; }
 .session-table th:nth-child(2), .session-table th:nth-child(3) { width: 12%; }
 .session-table th:nth-child(4) { width: 7%; }
-.session-table th:nth-child(5) { width: 8%; }
-.session-table th:nth-child(6) { width: 7%; }
-.session-table th:nth-child(7) { width: 8%; }
-.session-table th:nth-child(8) { width: 13%; }
+.session-table th:nth-child(5) { width: 7%; }
+.session-table th:nth-child(6) { width: 8%; }
+.session-table th:nth-child(7) { width: 13%; }
+.session-table th:nth-child(8) { width: 8%; }
 .session-table th:nth-child(9) { width: 8%; }
 .session-table th:nth-child(10) { width: 10%; }
 .session-table td strong { color: var(--muted); }

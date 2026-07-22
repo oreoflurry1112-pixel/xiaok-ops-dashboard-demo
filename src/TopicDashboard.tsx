@@ -33,6 +33,7 @@ export default function TopicDashboard() {
   const topicName = useMemo(() => new URLSearchParams(window.location.search).get('topic')?.trim() || DEFAULT_TOPIC, []);
   const [timeRange, setTimeRange] = useState<TimeRange>('前一周');
   const [detailUser, setDetailUser] = useState(ALL_USERS);
+  const [detailLinkVersion, setDetailLinkVersion] = useState(0);
   const [entrySearch, setEntrySearch] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('basic');
@@ -65,6 +66,7 @@ export default function TopicDashboard() {
 
   const selectRanking = (item: RankingItem) => {
     setDetailUser(item.name);
+    setDetailLinkVersion((version) => version + 1);
   };
 
   return (
@@ -126,7 +128,7 @@ export default function TopicDashboard() {
         <div className="dashboard-grid topic-dashboard-grid">
           <RankingPanel key={`${timeRange}-topic-ranking`} mode="用户" setMode={() => undefined} onSelect={selectRanking} userRanking={currentData.userRanking} topicRanking={[]} allowModeSwitch={false} />
           <SessionPanel
-            key={`${timeRange}-topic-sessions`}
+            key={`${timeRange}-topic-sessions-${detailLinkVersion}`}
             sessionsData={currentData.sessions}
             metrics={currentData.metrics}
             user={detailUser}

@@ -289,10 +289,10 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
       </div>
       <div className="session-table-wrap">
         <table className="session-table">
-          <thead><tr><th>会话提问内容</th><th>发生时间</th><th>结束时间</th><th>时长</th><th>运行状态</th><th>Token</th><th>用户反馈</th><th>反馈内容</th><th>发起用户</th><th>询问主题</th></tr></thead>
+          <thead><tr><th>会话提问内容</th><th>发生时间</th><th>结束时间</th><th>时长</th><th>Token</th><th>用户反馈</th><th>反馈内容</th><th>运行状态</th><th>发起用户</th><th>询问主题</th></tr></thead>
           <tbody>
             {visibleRows.map((item) => (
-              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td><StatusBadge value={item.status} /></td><td>{item.token}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><strong>{item.user}</strong></td><td><strong>{item.topic}</strong></td></tr>
+              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{item.token}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><strong>{item.topic}</strong></td></tr>
             ))}
             {visibleRows.length === 0 && <tr><td className="empty-state" colSpan={10}>没有找到符合条件的会话</td></tr>}
           </tbody>
@@ -318,6 +318,7 @@ export default function App() {
   const [rankingMode, setRankingMode] = useState<RankingMode>('用户');
   const [detailUser, setDetailUser] = useState(ALL_USERS);
   const [detailTopic, setDetailTopic] = useState(ALL_TOPICS);
+  const [detailLinkVersion, setDetailLinkVersion] = useState(0);
   const [timeRange, setTimeRange] = useState<TimeRange>('前一周');
   const currentData = dashboardData[timeRange];
 
@@ -326,8 +327,9 @@ export default function App() {
   };
 
   const selectRanking = (item: RankingItem) => {
-    if (rankingMode === '用户') setDetailUser(item.name);
-    if (rankingMode === '主题') setDetailTopic(item.name);
+    setDetailUser(rankingMode === '用户' ? item.name : ALL_USERS);
+    setDetailTopic(rankingMode === '主题' ? item.name : ALL_TOPICS);
+    setDetailLinkVersion((version) => version + 1);
   };
 
   const changeDetailUser = (value: string) => {
@@ -360,7 +362,7 @@ export default function App() {
         <MetricCards metrics={currentData.metrics} />
         <div className="dashboard-grid">
           <RankingPanel key={`${timeRange}-ranking`} mode={rankingMode} setMode={setRankingMode} onSelect={selectRanking} userRanking={currentData.userRanking} topicRanking={currentData.topicRanking} />
-          <SessionPanel key={`${timeRange}-sessions`} sessionsData={currentData.sessions} metrics={currentData.metrics} user={detailUser} topic={detailTopic} onUserChange={changeDetailUser} onTopicChange={changeDetailTopic} onReset={resetDetailFilters} />
+          <SessionPanel key={`${timeRange}-sessions-${detailLinkVersion}`} sessionsData={currentData.sessions} metrics={currentData.metrics} user={detailUser} topic={detailTopic} onUserChange={changeDetailUser} onTopicChange={changeDetailTopic} onReset={resetDetailFilters} />
         </div>
       </main>
     </div>
