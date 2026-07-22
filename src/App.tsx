@@ -247,6 +247,13 @@ function getSessionSortValue(session: Session, key: SessionSortKey) {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
+function formatSessionToken(token: string) {
+  const value = Number.parseFloat(token);
+  if (token.endsWith('百万')) return Math.round(value * 1_000_000).toLocaleString('zh-CN');
+  if (token.endsWith('万')) return Math.round(value * 10_000).toLocaleString('zh-CN');
+  return Math.round(value).toLocaleString('zh-CN');
+}
+
 export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange, onTopicChange, onReset, filterResetSignal, allowTopicFilter = true }: { sessionsData: Session[]; metrics: PeriodMetrics; user: string; topic: string; onUserChange: (value: string) => void; onTopicChange: (value: string) => void; onReset: () => void; filterResetSignal: number; allowTopicFilter?: boolean }) {
   const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('全部');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL_STATUSES);
@@ -349,7 +356,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
           <thead><tr><th>会话提问内容</th>{sortHeader('发生时间', 'startedAt')}{sortHeader('结束时间', 'endedAt')}{sortHeader('时长', 'duration')}{sortHeader('Token', 'token')}<th>用户反馈</th><th>反馈内容</th><th>运行状态</th><th>发起用户</th><th>询问主题</th></tr></thead>
           <tbody>
             {visibleRows.map((item) => (
-              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{item.token}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><strong>{item.topic}</strong></td></tr>
+              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{formatSessionToken(item.token)}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><strong>{item.topic}</strong></td></tr>
             ))}
             {visibleRows.length === 0 && <tr><td className="empty-state" colSpan={10}>没有找到符合条件的会话</td></tr>}
           </tbody>
