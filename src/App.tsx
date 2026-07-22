@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronDown,
   ChevronFirst,
   ChevronLast,
@@ -26,6 +28,8 @@ export type RankingMode = '用户' | '主题';
 type FeedbackFilter = '全部' | '有反馈' | '不满意反馈';
 type StatusFilter = '全部状态' | SessionStatus;
 type RankingSortKey = 'token' | 'sessions' | 'avgDurationSeconds';
+type SessionSortKey = 'startedAt' | 'endedAt' | 'duration' | 'token';
+type SortDirection = 'asc' | 'desc';
 
 export const ALL_USERS = '全部用户';
 export const ALL_TOPICS = '全部主题';
@@ -227,10 +231,28 @@ function StatusBadge({ value }: { value: SessionStatus }) {
   return <span className={`status-badge ${value === '已完成' ? 'completed' : value === '进行中' ? 'progressing' : 'terminated'}`}>{value}</span>;
 }
 
-export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange, onTopicChange, onReset, allowTopicFilter = true }: { sessionsData: Session[]; metrics: PeriodMetrics; user: string; topic: string; onUserChange: (value: string) => void; onTopicChange: (value: string) => void; onReset: () => void; allowTopicFilter?: boolean }) {
+function getSessionSortValue(session: Session, key: SessionSortKey) {
+  if (key === 'startedAt') return Date.parse(session.startedAt.replace(' ', 'T'));
+  if (key === 'endedAt') return session.endedAt === '-' ? null : Date.parse(session.endedAt.replace(' ', 'T'));
+  if (key === 'token') {
+    const value = Number.parseFloat(session.token);
+    if (session.token.endsWith('百万')) return value * 1_000_000;
+    if (session.token.endsWith('万')) return value * 10_000;
+    return value;
+  }
+
+  const hours = Number(session.duration.match(/(\d+)h/)?.[1] ?? 0);
+  const minutes = Number(session.duration.match(/(\d+)m/)?.[1] ?? 0);
+  const seconds = Number(session.duration.match(/(\d+)s/)?.[1] ?? 0);
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange, onTopicChange, onReset, filterResetSignal, allowTopicFilter = true }: { sessionsData: Session[]; metrics: PeriodMetrics; user: string; topic: string; onUserChange: (value: string) => void; onTopicChange: (value: string) => void; onReset: () => void; filterResetSignal: number; allowTopicFilter?: boolean }) {
   const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('全部');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL_STATUSES);
   const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState<SessionSortKey>('startedAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
@@ -238,7 +260,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
     const feedbackMatch = feedbackFilter === '全部' || (feedbackFilter === '有反馈' ? item.feedback !== '未反馈' : item.feedback === '不满意');
     const statusMatch = statusFilter === ALL_STATUSES || item.status === statusFilter;
     const query = search.trim().toLowerCase();
-    const searchMatch = !query || `${item.query}${item.feedbackText}${item.user}${item.topic}${item.status}`.toLowerCase().includes(query);
+    const searchMatch = !query || `${item.query}${item.feedbackText}`.toLowerCase().includes(query);
     return feedbackMatch && statusMatch && searchMatch;
   }), [feedbackFilter, search, sessionsData, statusFilter]);
   const users = useMemo(
@@ -252,14 +274,49 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
   const filtered = useMemo(() => baseFiltered.filter((item) => (
     (user === ALL_USERS || item.user === user) && (topic === ALL_TOPICS || item.topic === topic)
   )), [baseFiltered, topic, user]);
+  const sorted = useMemo(() => [...filtered].sort((first, second) => {
+    const firstValue = getSessionSortValue(first, sortKey);
+    const secondValue = getSessionSortValue(second, sortKey);
+    if (firstValue === null && secondValue === null) return 0;
+    if (firstValue === null) return 1;
+    if (secondValue === null) return -1;
+    const difference = firstValue - secondValue;
+    return sortDirection === 'asc' ? difference : -difference;
+  }), [filtered, sortDirection, sortKey]);
 
   useEffect(() => {
     setPage(1);
   }, [statusFilter, topic, user]);
 
+  useEffect(() => {
+    setFeedbackFilter('全部');
+    setStatusFilter(ALL_STATUSES);
+    setSearch('');
+    setPage(1);
+  }, [filterResetSignal]);
+
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pages);
-  const visibleRows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const visibleRows = sorted.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const changeSort = (nextKey: SessionSortKey) => {
+    setSortDirection((direction) => (sortKey === nextKey ? (direction === 'desc' ? 'asc' : 'desc') : 'desc'));
+    setSortKey(nextKey);
+    setPage(1);
+  };
+
+  const sortHeader = (label: string, key: SessionSortKey) => {
+    const active = sortKey === key;
+    const nextDirection = active && sortDirection === 'desc' ? '升序' : '降序';
+    return (
+      <th aria-sort={active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
+        <button className={`table-sort-button${active ? ' is-active' : ''}`} type="button" onClick={() => changeSort(key)} aria-label={`${label}，点击按${nextDirection}排序`}>
+          <span>{label}</span>
+          {active ? (sortDirection === 'desc' ? <ArrowDown size={13} /> : <ArrowUp size={13} />) : <ArrowUpDown size={13} />}
+        </button>
+      </th>
+    );
+  };
 
   const reset = () => {
     setFeedbackFilter('全部');
@@ -278,7 +335,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
         <div className="filter-row">
           <span className="filter-label">用户反馈</span>
           <Segmented options={['全部', '有反馈', '不满意反馈'] as const} value={feedbackFilter} onChange={(next) => { setFeedbackFilter(next); setPage(1); }} label="用户反馈" />
-          <label className="search-box"><Search size={15} /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder={allowTopicFilter ? '搜索提问内容、反馈内容、用户或主题' : '搜索提问内容、反馈内容或用户'} /></label>
+          <label className="search-box"><Search size={15} /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="搜索提问内容或反馈内容" /></label>
         </div>
         <div className="filter-row filter-row-secondary">
           <div className="filter-field"><span>发起用户</span><SearchableSelect label="发起用户" value={user} allLabel={ALL_USERS} options={users} onChange={onUserChange} /></div>
@@ -289,7 +346,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
       </div>
       <div className="session-table-wrap">
         <table className="session-table">
-          <thead><tr><th>会话提问内容</th><th>发生时间</th><th>结束时间</th><th>时长</th><th>Token</th><th>用户反馈</th><th>反馈内容</th><th>运行状态</th><th>发起用户</th><th>询问主题</th></tr></thead>
+          <thead><tr><th>会话提问内容</th>{sortHeader('发生时间', 'startedAt')}{sortHeader('结束时间', 'endedAt')}{sortHeader('时长', 'duration')}{sortHeader('Token', 'token')}<th>用户反馈</th><th>反馈内容</th><th>运行状态</th><th>发起用户</th><th>询问主题</th></tr></thead>
           <tbody>
             {visibleRows.map((item) => (
               <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{item.token}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><strong>{item.topic}</strong></td></tr>
@@ -318,7 +375,7 @@ export default function App() {
   const [rankingMode, setRankingMode] = useState<RankingMode>('用户');
   const [detailUser, setDetailUser] = useState(ALL_USERS);
   const [detailTopic, setDetailTopic] = useState(ALL_TOPICS);
-  const [detailLinkVersion, setDetailLinkVersion] = useState(0);
+  const [detailFilterResetSignal, setDetailFilterResetSignal] = useState(0);
   const [timeRange, setTimeRange] = useState<TimeRange>('前一周');
   const currentData = dashboardData[timeRange];
 
@@ -329,7 +386,7 @@ export default function App() {
   const selectRanking = (item: RankingItem) => {
     setDetailUser(rankingMode === '用户' ? item.name : ALL_USERS);
     setDetailTopic(rankingMode === '主题' ? item.name : ALL_TOPICS);
-    setDetailLinkVersion((version) => version + 1);
+    setDetailFilterResetSignal((signal) => signal + 1);
   };
 
   const changeDetailUser = (value: string) => {
@@ -362,7 +419,7 @@ export default function App() {
         <MetricCards metrics={currentData.metrics} />
         <div className="dashboard-grid">
           <RankingPanel key={`${timeRange}-ranking`} mode={rankingMode} setMode={setRankingMode} onSelect={selectRanking} userRanking={currentData.userRanking} topicRanking={currentData.topicRanking} />
-          <SessionPanel key={`${timeRange}-sessions-${detailLinkVersion}`} sessionsData={currentData.sessions} metrics={currentData.metrics} user={detailUser} topic={detailTopic} onUserChange={changeDetailUser} onTopicChange={changeDetailTopic} onReset={resetDetailFilters} />
+          <SessionPanel key={`${timeRange}-sessions`} sessionsData={currentData.sessions} metrics={currentData.metrics} user={detailUser} topic={detailTopic} onUserChange={changeDetailUser} onTopicChange={changeDetailTopic} onReset={resetDetailFilters} filterResetSignal={detailFilterResetSignal} />
         </div>
       </main>
     </div>

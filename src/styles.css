@@ -155,6 +155,9 @@ main { min-width: 0; padding: 28px; background: #fff; }
 .session-table { width: 100%; min-width: 1140px; border-collapse: collapse; table-layout: fixed; }
 .session-table thead { background: #f8fafd; }
 .session-table th { height: 44px; padding: 0 14px; color: var(--muted); font-size: 12px; text-align: left; }
+.table-sort-button { width: 100%; height: 44px; display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; color: inherit; background: transparent; font: inherit; text-align: left; }
+.table-sort-button:hover, .table-sort-button.is-active { color: var(--blue-strong); }
+.table-sort-button svg { flex: 0 0 auto; }
 .session-table td { height: 68px; padding: 0 14px; overflow: hidden; color: var(--muted); border-bottom: 1px solid #f4f6f8; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .session-table td:first-child { color: var(--text); }
 .session-table th:nth-child(1) { width: 15%; }
