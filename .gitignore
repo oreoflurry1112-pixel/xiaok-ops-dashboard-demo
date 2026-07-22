@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+hatch-pet-runs/
+design-qa.md
+topic-settings-modal-desktop.png
+topic-settings-operations-modal-desktop.png
+searchable-session-filters.png
+ranking-filter-linkage.png
