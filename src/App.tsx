@@ -413,7 +413,7 @@ export default function App() {
       </aside>
       <main id="top">
         <section className="page-heading">
-          <div><h1>小K问数日志</h1><p>按用户、主题、时间段与反馈查看平台使用量、会话质量和 Token 消耗。</p></div>
+          <div><h1>小K问数日志</h1></div>
           <label className="time-filter"><span>发生时间</span><select value={timeRange} onChange={(event) => changeTimeRange(event.target.value as TimeRange)}>{timeRanges.map((range) => <option key={range}>{range}</option>)}</select></label>
         </section>
         <MetricCards metrics={currentData.metrics} />
