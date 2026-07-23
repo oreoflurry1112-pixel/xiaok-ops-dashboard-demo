@@ -344,12 +344,12 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
         <div className="filter-row">
           <span className="filter-label">用户反馈</span>
           <Segmented options={['全部', '有反馈', '不满意反馈'] as const} value={feedbackFilter} onChange={(next) => { setFeedbackFilter(next); setPage(1); }} label="用户反馈" />
-          <label className="search-box"><Search size={15} /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="搜索提问内容或反馈内容" /></label>
+          <label className="inline-status-filter"><span>运行状态</span><select className="filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option>{ALL_STATUSES}</option><option>已完成</option><option>进行中</option><option>手动终止</option></select></label>
         </div>
         <div className="filter-row filter-row-secondary">
           {showDimensionFilters && <div className="filter-field"><span>发起用户</span><SearchableSelect label="发起用户" value={user} allLabel={ALL_USERS} options={users} onChange={onUserChange} /></div>}
           {showDimensionFilters && allowTopicFilter && <div className="filter-field"><span>询问主题</span><SearchableSelect label="询问主题" value={topic} allLabel={ALL_TOPICS} options={topics} onChange={onTopicChange} /></div>}
-          <label className="filter-field"><span>运行状态</span><select className="filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option>{ALL_STATUSES}</option><option>已完成</option><option>进行中</option><option>手动终止</option></select></label>
+          <label className="search-box"><Search size={15} /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="搜索提问内容或反馈内容" /></label>
           <button type="button" className="reset-button" onClick={reset}>重置</button>
         </div>
       </div>
