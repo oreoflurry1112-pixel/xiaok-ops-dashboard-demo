@@ -143,10 +143,6 @@ export function MetricCards({ metrics }: { metrics: PeriodMetrics }) {
           <div className="neutral"><dt>未反馈</dt><dd>{metrics.noFeedback.toLocaleString('zh-CN')} 次</dd><b>{metrics.noFeedbackRate}</b></div>
         </dl>
       </article>
-      <article className="metric-card">
-        <span>平均时长</span>
-        <strong>{metrics.avgDuration}</strong>
-      </article>
       <article className="metric-card metric-completion">
         <div className="completion-primary">
           <span>完成率</span>
