@@ -12,6 +12,7 @@ import {
   Database,
   Image,
   Search,
+  Trash2,
 } from 'lucide-react';
 import {
   dashboardData,
@@ -358,7 +359,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
           <thead><tr><th>会话提问内容</th>{sortHeader('发生时间', 'startedAt')}{sortHeader('结束时间', 'endedAt')}{sortHeader('时长', 'duration')}{sortHeader('Token', 'token')}<th>用户反馈</th><th>反馈内容</th><th>运行状态</th><th>发起用户</th><th>询问主题</th></tr></thead>
           <tbody>
             {visibleRows.map((item) => (
-              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{formatSessionToken(item.token)}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><span className="topic-name-cell"><strong>{item.topic}</strong>{item.topicDeleted && <span className="deleted-topic-badge">已删除</span>}</span></td></tr>
+              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{formatSessionToken(item.token)}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><span className="topic-name-cell"><strong className={item.topicDeleted ? 'is-deleted' : ''}>{item.topic}</strong>{item.topicDeleted && <span className="deleted-topic-marker" role="img" tabIndex={0} aria-label="主题已被删除"><Trash2 size={12} /><span className="deleted-topic-tooltip" role="tooltip">主题已被删除</span></span>}</span></td></tr>
             ))}
             {visibleRows.length === 0 && <tr><td className="empty-state" colSpan={10}>没有找到符合条件的会话</td></tr>}
           </tbody>
