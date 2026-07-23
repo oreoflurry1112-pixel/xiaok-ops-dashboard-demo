@@ -130,11 +130,19 @@ main { min-width: 0; padding: 28px; background: #fff; }
 
 .session-title { height: 80px; }
 .filters { min-height: 100px; padding: 0 24px 12px; }
+.filters-single-row { min-height: 58px; padding-inline: 14px; }
 .filter-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.query-filter-row { gap: 8px; }
+.query-filter-row .segmented { gap: 2px; padding: 2px; }
+.query-filter-row .segmented button { min-width: 44px; padding-inline: 6px; font-size: 12px; }
+.query-filter-row .inline-status-filter { gap: 6px; }
+.query-filter-row .filter-select { width: 92px; }
+.query-filter-row .search-box { min-width: 0; }
+.query-filter-row .reset-button { padding-inline: 10px; }
 .filter-row + .filter-row { margin-top: 12px; }
 .filter-row-secondary { align-items: flex-end; flex-wrap: wrap; }
 .filter-label, .filter-field > span { color: var(--muted); font-size: 12px; white-space: nowrap; }
-.inline-status-filter { display: flex; align-items: center; gap: 8px; margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.inline-status-filter { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .search-box { height: 34px; min-width: 220px; flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--border); border-radius: 6px; color: #9aa4b2; }
 .search-box input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--text); font-size: 12px; background: transparent; }
 .search-box input::placeholder { color: #a3adbb; }
