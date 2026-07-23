@@ -29,12 +29,13 @@ function formatRate(value: number, total: number) {
   return total === 0 ? '0.0%' : `${((value / total) * 100).toFixed(1)}%`;
 }
 
-function aggregateUserRanking(sessions: Session[]): RankingItem[] {
+function aggregateRanking(sessions: Session[], dimension: 'user' | 'topic'): RankingItem[] {
   const grouped = new Map<string, Omit<RankingItem, 'id' | 'avgDuration'> & { durationTotal: number }>();
 
   sessions.forEach((session) => {
-    const current = grouped.get(session.user) ?? {
-      name: session.user,
+    const name = session[dimension];
+    const current = grouped.get(name) ?? {
+      name,
       token: 0,
       sessions: 0,
       satisfied: 0,
@@ -49,7 +50,7 @@ function aggregateUserRanking(sessions: Session[]): RankingItem[] {
     current.dissatisfied += session.feedback === '不满意' ? 1 : 0;
     current.noFeedback += session.feedback === '未反馈' ? 1 : 0;
     current.durationTotal += parseDuration(session.duration);
-    grouped.set(session.user, current);
+    grouped.set(name, current);
   });
 
   return [...grouped.values()]
@@ -69,6 +70,15 @@ function aggregateUserRanking(sessions: Session[]): RankingItem[] {
     })
     .sort((a, b) => b.token - a.token)
     .map((item, index) => ({ ...item, id: index + 1 }));
+}
+
+export function buildDashboardPeriodFromSessions(sessions: Session[]): DashboardPeriod {
+  return {
+    metrics: aggregateMetrics(sessions),
+    userRanking: aggregateRanking(sessions, 'user'),
+    topicRanking: aggregateRanking(sessions, 'topic'),
+    sessions,
+  };
 }
 
 function aggregateMetrics(sessions: Session[]): PeriodMetrics {
@@ -111,12 +121,8 @@ export function buildTopicDashboardPeriod(topicName: string, range: TimeRange): 
   const sourceTopic = availableTopics[topicHash(topicName) % availableTopics.length];
   const sessions = period.sessions
     .filter((session) => session.topic === sourceTopic)
-    .map((session) => ({ ...session, topic: topicName }));
+    .map((session) => ({ ...session, topic: topicName, topicDeleted: false }));
+  const dashboard = buildDashboardPeriodFromSessions(sessions);
 
-  return {
-    metrics: aggregateMetrics(sessions),
-    userRanking: aggregateUserRanking(sessions),
-    topicRanking: [],
-    sessions,
-  };
+  return { ...dashboard, topicRanking: [] };
 }

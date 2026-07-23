@@ -23,6 +23,7 @@ import {
   type SessionStatus,
   type TimeRange,
 } from './data';
+import { buildDashboardPeriodFromSessions } from './topicData';
 
 export type RankingMode = '用户' | '主题';
 type FeedbackFilter = '全部' | '有反馈' | '不满意反馈';
@@ -162,7 +163,7 @@ export function MetricCards({ metrics }: { metrics: PeriodMetrics }) {
   );
 }
 
-export function RankingPanel({ mode, setMode, onSelect, userRanking, topicRanking, allowModeSwitch = true }: { mode: RankingMode; setMode: (mode: RankingMode) => void; onSelect: (item: RankingItem) => void; userRanking: RankingItem[]; topicRanking: RankingItem[]; allowModeSwitch?: boolean }) {
+export function RankingPanel({ mode, setMode, onSelect, userRanking, topicRanking, allowModeSwitch = true }: { mode: RankingMode; setMode: (mode: RankingMode) => void; onSelect?: (item: RankingItem) => void; userRanking: RankingItem[]; topicRanking: RankingItem[]; allowModeSwitch?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const [sortKey, setSortKey] = useState<RankingSortKey>('token');
   const rankingSource = mode === '用户' ? userRanking : topicRanking;
@@ -171,7 +172,7 @@ export function RankingPanel({ mode, setMode, onSelect, userRanking, topicRankin
     [rankingSource, sortKey],
   );
   const rows = expanded ? ranking : ranking.slice(0, 10);
-  const max = Math.max(...ranking.map((item) => item.token));
+  const max = Math.max(1, ...ranking.map((item) => item.token));
 
   const changeMode = (next: RankingMode) => {
     setMode(next);
@@ -201,7 +202,8 @@ export function RankingPanel({ mode, setMode, onSelect, userRanking, topicRankin
               type="button"
               className="ranking-row"
               key={item.name}
-              onClick={() => onSelect(item)}
+              disabled={!onSelect}
+              onClick={() => onSelect?.(item)}
             >
               <span className="rank-badge">{index + 1}</span>
               <strong className="rank-name">{item.name}</strong>
@@ -254,7 +256,7 @@ function formatSessionToken(token: string) {
   return Math.round(value).toLocaleString('zh-CN');
 }
 
-export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange, onTopicChange, onReset, filterResetSignal, allowTopicFilter = true }: { sessionsData: Session[]; metrics: PeriodMetrics; user: string; topic: string; onUserChange: (value: string) => void; onTopicChange: (value: string) => void; onReset: () => void; filterResetSignal: number; allowTopicFilter?: boolean }) {
+export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange, onTopicChange, onReset, filterResetSignal, allowTopicFilter = true, showDimensionFilters = true }: { sessionsData: Session[]; metrics: PeriodMetrics; user: string; topic: string; onUserChange: (value: string) => void; onTopicChange: (value: string) => void; onReset: () => void; filterResetSignal: number; allowTopicFilter?: boolean; showDimensionFilters?: boolean }) {
   const [feedbackFilter, setFeedbackFilter] = useState<FeedbackFilter>('全部');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL_STATUSES);
   const [search, setSearch] = useState('');
@@ -345,8 +347,8 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
           <label className="search-box"><Search size={15} /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="搜索提问内容或反馈内容" /></label>
         </div>
         <div className="filter-row filter-row-secondary">
-          <div className="filter-field"><span>发起用户</span><SearchableSelect label="发起用户" value={user} allLabel={ALL_USERS} options={users} onChange={onUserChange} /></div>
-          {allowTopicFilter && <div className="filter-field"><span>询问主题</span><SearchableSelect label="询问主题" value={topic} allLabel={ALL_TOPICS} options={topics} onChange={onTopicChange} /></div>}
+          {showDimensionFilters && <div className="filter-field"><span>发起用户</span><SearchableSelect label="发起用户" value={user} allLabel={ALL_USERS} options={users} onChange={onUserChange} /></div>}
+          {showDimensionFilters && allowTopicFilter && <div className="filter-field"><span>询问主题</span><SearchableSelect label="询问主题" value={topic} allLabel={ALL_TOPICS} options={topics} onChange={onTopicChange} /></div>}
           <label className="filter-field"><span>运行状态</span><select className="filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option>{ALL_STATUSES}</option><option>已完成</option><option>进行中</option><option>手动终止</option></select></label>
           <button type="button" className="reset-button" onClick={reset}>重置</button>
         </div>
@@ -356,7 +358,7 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
           <thead><tr><th>会话提问内容</th>{sortHeader('发生时间', 'startedAt')}{sortHeader('结束时间', 'endedAt')}{sortHeader('时长', 'duration')}{sortHeader('Token', 'token')}<th>用户反馈</th><th>反馈内容</th><th>运行状态</th><th>发起用户</th><th>询问主题</th></tr></thead>
           <tbody>
             {visibleRows.map((item) => (
-              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{formatSessionToken(item.token)}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><strong>{item.topic}</strong></td></tr>
+              <tr key={item.id}><td title={item.query}>{item.query}</td><td>{item.startedAt}</td><td>{item.endedAt}</td><td>{item.duration}</td><td>{formatSessionToken(item.token)}</td><td><FeedbackBadge value={item.feedback} /></td><td title={item.feedbackText}>{item.feedbackText}</td><td><StatusBadge value={item.status} /></td><td><strong>{item.user}</strong></td><td><span className="topic-name-cell"><strong>{item.topic}</strong>{item.topicDeleted && <span className="deleted-topic-badge">已删除</span>}</span></td></tr>
             ))}
             {visibleRows.length === 0 && <tr><td className="empty-state" colSpan={10}>没有找到符合条件的会话</td></tr>}
           </tbody>
@@ -380,33 +382,29 @@ export function SessionPanel({ sessionsData, metrics, user, topic, onUserChange,
 
 export default function App() {
   const [rankingMode, setRankingMode] = useState<RankingMode>('用户');
-  const [detailUser, setDetailUser] = useState(ALL_USERS);
-  const [detailTopic, setDetailTopic] = useState(ALL_TOPICS);
-  const [detailFilterResetSignal, setDetailFilterResetSignal] = useState(0);
+  const [globalUser, setGlobalUser] = useState(ALL_USERS);
+  const [globalTopic, setGlobalTopic] = useState(ALL_TOPICS);
   const [timeRange, setTimeRange] = useState<TimeRange>('前一周');
   const currentData = dashboardData[timeRange];
+  const globalUsers = useMemo(
+    () => [...new Set(currentData.sessions.filter((session) => globalTopic === ALL_TOPICS || session.topic === globalTopic).map((session) => session.user))].sort((first, second) => first.localeCompare(second, 'zh-CN')),
+    [currentData.sessions, globalTopic],
+  );
+  const globalTopics = useMemo(
+    () => [...new Set(currentData.sessions.filter((session) => globalUser === ALL_USERS || session.user === globalUser).map((session) => session.topic))].sort((first, second) => first.localeCompare(second, 'zh-CN')),
+    [currentData.sessions, globalUser],
+  );
+  const globallyFilteredSessions = useMemo(() => currentData.sessions.filter((session) => (
+    (globalUser === ALL_USERS || session.user === globalUser)
+    && (globalTopic === ALL_TOPICS || session.topic === globalTopic)
+  )), [currentData.sessions, globalTopic, globalUser]);
+  const globalData = useMemo(
+    () => (globalUser === ALL_USERS && globalTopic === ALL_TOPICS ? currentData : buildDashboardPeriodFromSessions(globallyFilteredSessions)),
+    [currentData, globalTopic, globalUser, globallyFilteredSessions],
+  );
 
   const changeTimeRange = (nextRange: TimeRange) => {
     setTimeRange(nextRange);
-  };
-
-  const selectRanking = (item: RankingItem) => {
-    setDetailUser(rankingMode === '用户' ? item.name : ALL_USERS);
-    setDetailTopic(rankingMode === '主题' ? item.name : ALL_TOPICS);
-    setDetailFilterResetSignal((signal) => signal + 1);
-  };
-
-  const changeDetailUser = (value: string) => {
-    setDetailUser(value);
-  };
-
-  const changeDetailTopic = (value: string) => {
-    setDetailTopic(value);
-  };
-
-  const resetDetailFilters = () => {
-    setDetailUser(ALL_USERS);
-    setDetailTopic(ALL_TOPICS);
   };
 
   return (
@@ -421,12 +419,16 @@ export default function App() {
       <main id="top">
         <section className="page-heading">
           <div><h1>小K问数日志</h1></div>
-          <label className="time-filter"><span>发生时间</span><select value={timeRange} onChange={(event) => changeTimeRange(event.target.value as TimeRange)}>{timeRanges.map((range) => <option key={range}>{range}</option>)}</select></label>
+          <div className="global-filters" aria-label="全局筛选">
+            <div className="global-filter"><span>发起用户</span><SearchableSelect label="发起用户" value={globalUser} allLabel={ALL_USERS} options={globalUsers} onChange={setGlobalUser} /></div>
+            <div className="global-filter"><span>询问主题</span><SearchableSelect label="询问主题" value={globalTopic} allLabel={ALL_TOPICS} options={globalTopics} onChange={setGlobalTopic} /></div>
+            <label className="time-filter"><span>发生时间</span><select value={timeRange} onChange={(event) => changeTimeRange(event.target.value as TimeRange)}>{timeRanges.map((range) => <option key={range}>{range}</option>)}</select></label>
+          </div>
         </section>
-        <MetricCards metrics={currentData.metrics} />
+        <MetricCards metrics={globalData.metrics} />
         <div className="dashboard-grid">
-          <RankingPanel key={`${timeRange}-ranking`} mode={rankingMode} setMode={setRankingMode} onSelect={selectRanking} userRanking={currentData.userRanking} topicRanking={currentData.topicRanking} />
-          <SessionPanel key={`${timeRange}-sessions`} sessionsData={currentData.sessions} metrics={currentData.metrics} user={detailUser} topic={detailTopic} onUserChange={changeDetailUser} onTopicChange={changeDetailTopic} onReset={resetDetailFilters} filterResetSignal={detailFilterResetSignal} />
+          <RankingPanel key={`${timeRange}-ranking`} mode={rankingMode} setMode={setRankingMode} userRanking={globalData.userRanking} topicRanking={globalData.topicRanking} />
+          <SessionPanel key={`${timeRange}-sessions`} sessionsData={globalData.sessions} metrics={globalData.metrics} user={ALL_USERS} topic={ALL_TOPICS} onUserChange={() => undefined} onTopicChange={() => undefined} onReset={() => undefined} filterResetSignal={0} showDimensionFilters={false} />
         </div>
       </main>
     </div>

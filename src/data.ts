@@ -26,6 +26,7 @@ export type Session = {
   feedbackText: string;
   user: string;
   topic: string;
+  topicDeleted: boolean;
 };
 
 export type PeriodMetrics = {
@@ -62,6 +63,7 @@ export const timeRanges: TimeRange[] = ['前一周', '前一月', '前三月', '
 
 const users = ['张齐萌', '陈欣萌', '郑晓茶', '李伟', '王思雨', '刘小雨', '赵云', '孙海洋', '周婷', '杨帆', '黄健', '吴婷'];
 const topics = ['KBC收款主题', '苍穹PDT经营分析', '客户收益主题', '季度销售分析', '产品健康度', '客户满意度主题', '销售排名主题', '商机转化主题', '客户增长主题', '成本核算主题'];
+const deletedTopics = new Set(['客户满意度主题', '销售排名主题']);
 
 const queryTemplates = [
   '按分公司和产品线拆解本月订阅收款。',
@@ -297,6 +299,7 @@ function buildSessions(config: PeriodConfig, periodIndex: number): Session[] {
       feedbackText: feedback === '不满意' ? feedbackReasons[(index + periodIndex) % feedbackReasons.length] : '-',
       user,
       topic,
+      topicDeleted: deletedTopics.has(topic),
     };
   });
 }
